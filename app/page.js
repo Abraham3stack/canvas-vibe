@@ -1,65 +1,183 @@
-import Image from "next/image";
+"use client";
+
+import { db, storage } from "../lib/firebase";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
+import CommentSection from "../components/CommentSection";
+import { deleteObject, ref } from "firebase/storage";
+import {
+  collection,
+  orderBy,
+  query,
+  doc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  onSnapshot,
+  deleteDoc,
+  getDocs,
+} from "firebase/firestore";
 
 export default function Home() {
+  const {user, loading} = useAuth();
+  const [deletingId, setDeletingId] = useState(null);
+  const router = useRouter();
+
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user,loading, router]);
+
+  // Fetch Post useEffect
+  useEffect(() => {
+    const q = query(
+      collection(db, "posts"),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const postsArray = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPosts(postsArray);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Handle Likes function
+  const handleLike = async (postId, currentLikes) => {
+    if (!user) return;
+
+    const postRef = doc(db, "posts", postId);
+
+    const alreadyLiked = currentLikes?.includes(user.uid);
+
+    setPosts((prevPosts) =>
+      prevPosts.map((post) =>
+        post.id === postId
+          ? {
+            ...post,
+            likes: alreadyLiked
+              ? post.likes.filter((id) => id !== user.uid)
+              : [...(post.likes || []), user.uid],
+            }
+          : post
+        )
+      );
+
+      try {
+        await updateDoc(postRef, {
+          likes: alreadyLiked
+            ? arrayRemove(user.uid)
+            : arrayUnion(user.uid),
+        });
+      } catch (error) {
+        console.error(error);
+      }
+  };
+
+  // Handle Delete function
+  const handleDelete = async (post) => {
+    const confirmDelete = confirm("Are you sure you want to delete this post?");
+    if (!confirmDelete) return;
+
+    setDeletingId(post.id);
+
+    try {
+      // Image Delete
+      if (post.imagePath) {
+        const imageRef = ref(storage, post.imagePath);
+        await deleteObject(imageRef);
+      }
+      
+      // Comment delete
+      const commentsSnapshot = await getDocs(
+        collection(db, "posts", post.id, "comments")
+      );
+
+      const deleteCommentPromises = commentsSnapshot.docs.map((docSnap) =>
+        deleteDoc(doc(db, "posts", post.id, "comments", docSnap.id))
+      );
+
+      await Promise.all(deleteCommentPromises);
+
+      // post delete
+      await deleteDoc(doc(db, "posts", post.id));
+    } catch (error) {
+      console.error(error);
+    }
+    setDeletingId(null);
+  };
+
+  if (loading) {
+    return <p className="p-10">Loading...</p>;
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="p-6 max-w-7xl mx-auto dark:bg-gray-900">
+
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {posts.map((post) => (
+          <div 
+            key={post.id}
+            className="group w-full bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            {/* Image */}
+            <div>
+              <img 
+                src={post.imageURL}
+                alt="post"
+                className="w-full h-56 object-cover rounded-t-2xl transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+
+            <div className="p-3">
+              <p className="font-medium text-sm break-words line-clamp-3 text-black dark:text-white">
+                {post.caption}
+              </p>
+
+              <p 
+                onClick={() => router.push(`/profile/${post.userId}`)}
+                className="text-sm text-gray-500 dark:text-gray-400 mb-2 cursor-pointer hover:underline"
+              >
+                {post.username}
+              </p>
+
+              {/* Like Buttton */}
+              <button
+                onClick={() => handleLike(post.id, post.likes || [])}
+                className="flex items-center gap-2 text-red-500 hover:scale-105 transition"
+              >
+                ❤️ {post.likes?.length || 0}
+              </button>
+
+              {/* Delete Button */}
+              {user?.uid === post.userId && (
+                <button
+                  onClick={() => handleDelete(post)}
+                  disabled={deletingId === post.id}
+                  className={`text-sm mt-2 transition ${
+                    deletingId === post.id
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-red-500 hover:text-red-600 hover:underline"
+                  }`}
+                >
+                  {deletingId === post.id ? "Deleting..." : "Delete"}
+                </button>
+              )}
+
+              <CommentSection postId={post.id} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }
