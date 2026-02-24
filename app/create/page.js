@@ -12,6 +12,7 @@ import {
   doc,
   getDoc,
 } from "firebase/firestore";
+import imageCompression from "browser-image-compression";
 
 export default function CreatePost() {
   const { user } = useAuth();
@@ -37,11 +38,20 @@ export default function CreatePost() {
     setLoading(true);
 
     try {
-      // 1. Upload image to firebase storage
-      const imageRef = ref(storage, `posts/${Date.now()}-${image.name}`);
+      // Compress image Before upload
+      const options = {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+      };
+
+      const compressedImage = await imageCompression(image, options);
+
+      // 1. Upload compressed image
+      const imageRef = ref(storage, `posts/${Date.now()}-${compressedImage.name}`);
       const imagePath = imageRef.fullPath;
 
-      await uploadBytes(imageRef, image);
+      await uploadBytes(imageRef, compressedImage);
 
       // 2.Get download URL
       const imageURL = await getDownloadURL(imageRef);
@@ -50,6 +60,7 @@ export default function CreatePost() {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const userData = userDoc.data();
 
+      // Save post to Firestore
       await addDoc(collection(db, "posts"), {
         imageURL,
         imagePath,
