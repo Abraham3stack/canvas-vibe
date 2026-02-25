@@ -86,11 +86,11 @@ export default function CreatePost() {
 
       try {
         const options = {
-          maxSizeMB: 0.5,
-          maxWidthOrHeight: 1200,
+          maxSizeMB: 0.3,
+          maxWidthOrHeight: 1080,
           useWebWorker: true,
           fileType: "image/jpeg",
-          initialQuality: 0.85,
+          initialQuality: 0.7,
         };
 
         compressedImage = await imageCompression(image, options);
