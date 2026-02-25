@@ -10,9 +10,20 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // UserName Generator function
+  const generateUsername = (fullName) => {
+    if (!fullName) return;
+
+    const base = fullName.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
+
+    const randomNumber = Math.floor(1000 + Math.random() * 9000);
+
+    return base + randomNumber;
+  };
+
   const [formData, setFormData] = useState({
     fullName: "",
-    age: "",
+    dob: "",
     nationality: "",
     username: "",
     email: "",
@@ -21,10 +32,22 @@ export default function Signup() {
 
   // Handle Change
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    if (name === "fullName") {
+      const suggestedUsername = generateUsername(value);
+
+      setFormData({
+        ...formData,
+        fullName: value,
+        username: suggestedUsername,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   // Handle Signup
@@ -43,7 +66,7 @@ export default function Signup() {
 
       await setDoc(doc(db, "users", user.uid), {
         fullName: formData.fullName,
-        age: formData.age,
+        dob: formData.dob,
         nationality: formData.nationality,
         username: formData.username,
         email: formData.email,
@@ -51,7 +74,7 @@ export default function Signup() {
         photoURL: "https://i.pravatar.cc/150?img=3",
         createdAt: serverTimestamp(),
       });
-      router.push("/login");
+      router.push("/home");
     } catch (error) {
       console.error(error);
       alert(error.message);
@@ -79,27 +102,40 @@ export default function Signup() {
         />
 
         <input 
-          type="number"
-          name="age"
-          placeholder="Age"
+          type="date"
+          name="dob"
           onChange={handleChange}
           className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
           required
         />
 
-        <input 
-          type="text"
+        <select
           name="nationality"
-          placeholder="Nationality"
           onChange={handleChange}
           className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-          required
-        />
+        >
+          <option value="">Select Country</option>
+          <option value="Nigeria">Nigeria</option>
+          <option value="Sweden">Sweden</option>
+          <option value="United States">United States</option>
+          <option value="United Kingdom">United Kingdom</option>
+          <option value="Canada">Canada</option>
+          <option value="Australia">Australia</option>
+          <option value="Germany">Germany</option>
+          <option value="France">France</option>
+          <option value="Italy">Italy</option>
+          <option value="Brazil">Brazil</option>
+          <option value="South Africa">South Africa</option>
+          <option value="India">India</option>
+          <option value="China">China</option>
+          <option value="Japan">Japan</option>
+          <option value="Russia">Russia</option>
+        </select>
 
         <input 
           type="text"
           name="username"
-          placeholder="Username"
+          value={formData.username}
           onChange={handleChange}
           className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
           required
@@ -146,7 +182,7 @@ export default function Signup() {
         <p className="text-sm text-center text-gray-600 dark:text-gray-400 mt-4">
           Already have an account?{" "}
           <span
-            onClick={() => router.push("/login")}
+            onClick={() => router.push("/home")}
             className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
           >
             Login

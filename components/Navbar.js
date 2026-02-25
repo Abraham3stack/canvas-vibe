@@ -61,7 +61,7 @@ export default function Navbar() {
       <div className="max-w-9xl mx-auto px-6 py-4 flex justify-between items-center dark:bg-gray-900">
         {/* Left NavBar */}
         <h1
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/home")}
           className="text-2xl font-bold text-black dark:text-white cursor-pointer"
         >
           Canvas Vibe
@@ -75,7 +75,7 @@ export default function Navbar() {
             {user ? (
               <>
                 <button
-                  onClick={() => router.push("/")}
+                  onClick={() => router.push("/home")}
                   className="text-gray-700 hover:text-black dark:text-gray-300 dark:hover:text-white cursor-pointer"
                 >
                   Explore
@@ -170,7 +170,7 @@ export default function Navbar() {
             <>
               <button
                   onClick={() => {
-                  router.push("/");
+                  router.push("/home");
                   setIsOpen(false);
                 }}
                 className="block w-full text-left text-black dark:text-white"

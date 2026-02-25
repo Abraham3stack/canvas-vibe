@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "next-themes";
 import Footer from "../components/Footer";
+import FloatingPostButton from "../components/FloatingPostButton";
 
 export const metadata = {
     title: "Canvas Vibe",
@@ -44,6 +45,7 @@ export default function RootLayout({ children }) {
                 {children}
               </div>
               <Footer />
+              <FloatingPostButton />
             </div>
           </AuthProvider>
         </ThemeProvider>

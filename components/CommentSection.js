@@ -13,6 +13,7 @@ import {
   doc, 
   getDoc,
 } from "firebase/firestore";
+import { Send } from "lucide-react";
 
 export default function CommentSection({ postId }) {
   const { user } = useAuth();
@@ -77,21 +78,30 @@ export default function CommentSection({ postId }) {
         {user && (
           <form
             onSubmit={handleAddComment}
-            className="flex gap-2 mt-2"
+            className="flex items-center gap-2 mt-2"
           >
             <input 
               type="text"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Add a comment..."
-              className="flex-1 border rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 dark:text-white"
+              className="flex-1 min-w-0 px-2 py-1 text-sm rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
 
             <button
               type="submit"
-              className="text-blue-500 dark:text-blue-400 text-sm"
+              disabled={!commentText.trim()}
+              className="flex items-center justify-center bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-70 transition rounded-full w-9 h-9 sm:rounded-md sm:w-auto sm:h-auto sm:px-2 sm:py-1"
             >
-              Post
+              {/* Desktop text */}
+              <span className="hidden sm:inline">
+                Comment
+              </span>
+
+              {/* Mobile icon */}
+              <span className="sm:hidden">
+                <Send size={18} />
+              </span>
             </button>
           </form>
         )}

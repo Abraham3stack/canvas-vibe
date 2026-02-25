@@ -19,7 +19,7 @@ export default function Signup() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // alert("Login successful!");
-      router.push("/");
+      router.push("/home");
     } catch (error) {
       alert(error.message);
     }
