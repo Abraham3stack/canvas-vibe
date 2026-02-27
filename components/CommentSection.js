@@ -47,6 +47,11 @@ export default function CommentSection({ postId }) {
     if (!user) return;
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
+
+    if (!userDoc.exists()) {
+      console.error("User profile not found");
+      return;
+    }
     const userData = userDoc.data();
 
     await addDoc(collection(db, "posts", postId, "comments"), {
